@@ -1,0 +1,29 @@
+# Снимок фидов застройщиков для демо «Этажи · Новостройки»: скачать фид, разобрать квартиры, скачать планировки.
+# Ссылки на фиды — в секрете репозитория FEEDS (строки «имя ссылка»). Запуск — пушем в main или по кнопке Run workflow.
+name: Снимок фидов
+on:
+  push:
+    branches: [main]
+    paths: [feeds.txt, snapshot.py, .github/workflows/snapshot.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  snap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pillow
+      - run: python snapshot.py
+        env:
+          FEEDS: ${{ secrets.FEEDS }}
+      - name: Сохранить снимок
+        run: |
+          git config user.name "feeds-bot"
+          git config user.email "feeds-bot@users.noreply.github.com"
+          git add -A out
+          git commit -m "Снимок фидов $(date -u +%F' '%H:%M) [skip ci]" || echo "без изменений"
+          git push
